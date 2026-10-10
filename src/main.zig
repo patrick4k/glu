@@ -18,6 +18,7 @@ pub fn main() !void {
         \\ "bar\"baz"
         \\ 1234
         \\ 10.23
+        \\ let fn for while if unless until else
         \\
     ;
     var tok = glu.tokenizer.Tokenizer.init(input);

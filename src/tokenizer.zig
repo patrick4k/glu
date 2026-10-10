@@ -24,8 +24,29 @@ pub const TokenType = enum {
     l_bracket,
     r_bracket,
 
+    // keywords,
+    kw_let,
+    kw_fn,
+    kw_if,
+    kw_unless,
+    kw_else,
+    kw_for,
+    kw_while,
+    kw_until,
+
     eof,
 };
+
+const keywords = std.StaticStringMap(TokenType).initComptime(.{
+    .{ "let", .kw_let },
+    .{ "fn", .kw_fn },
+    .{ "if", .kw_if },
+    .{ "unless", .kw_unless },
+    .{ "else", .kw_else },
+    .{ "for", .kw_for },
+    .{ "while", .kw_while },
+    .{ "until", .kw_until },
+});
 
 pub const Token = struct {
     type: TokenType,
@@ -158,9 +179,12 @@ pub const Tokenizer = struct {
             .identifier => switch (self.next_char()) {
                 'a'...'z', 'A'...'Z', '_', '0'...'9' => continue :next .identifier,
                 else => {
-                    // TODO: Handle keywords
-                    _ = self.buffer[token.start..self.index];
-                    token.type = .identifier;
+                    const ident = self.buffer[token.start..self.index];
+                    var tokty = TokenType.identifier;
+                    if (keywords.get(ident)) |kw_tokty| {
+                        tokty = kw_tokty;
+                    }
+                    token.type = tokty;
                 },
             },
             .newline => switch (self.next_char()) {
