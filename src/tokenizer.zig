@@ -2,14 +2,25 @@ const std = @import("std");
 
 pub const TokenType = enum {
     invalid,
+
     identifier,
     string_literal,
+
+    // symbols
+    semicolon,
+    comma,
+    question_mark,
+    colon,
+    newline,
+
+    // ([{}])
     l_paren,
     r_paren,
     l_brace,
     r_brace,
     l_bracket,
     r_bracket,
+
     eof,
 };
 
@@ -63,13 +74,58 @@ pub const Tokenizer = struct {
                 },
 
                 // ignore
-                ' ', '\n', '\t', '\r' => {
+                ' ', '\t' => {
                     _ = self.next_char();
                     return self.next();
+                },
+                '\n', '\r' => {
+                    token.type = .newline;
+                    // self.index += 1;
+                    continue :next .newline;
                 },
                 'a'...'z', 'A'...'Z', '_' => {
                     token.type = .identifier;
                     continue :next .identifier;
+                },
+                '(' => {
+                    token.type = .l_paren;
+                    self.index += 1;
+                },
+                ')' => {
+                    token.type = .r_paren;
+                    self.index += 1;
+                },
+                '[' => {
+                    token.type = .l_bracket;
+                    self.index += 1;
+                },
+                ']' => {
+                    token.type = .r_bracket;
+                    self.index += 1;
+                },
+                '{' => {
+                    token.type = .l_brace;
+                    self.index += 1;
+                },
+                '}' => {
+                    token.type = .r_brace;
+                    self.index += 1;
+                },
+                ';' => {
+                    token.type = .semicolon;
+                    self.index += 1;
+                },
+                ',' => {
+                    token.type = .comma;
+                    self.index += 1;
+                },
+                '?' => {
+                    token.type = .question_mark;
+                    self.index += 1;
+                },
+                ':' => {
+                    token.type = .colon;
+                    self.index += 1;
                 },
                 else => continue :next .invalid,
             },
@@ -92,6 +148,10 @@ pub const Tokenizer = struct {
                     token.type = .identifier;
                 },
             },
+            .newline => switch (self.next_char()) {
+                '\n', '\r' => continue :next .newline,
+                else => {},
+            },
         }
 
         token.end = self.index;
@@ -103,4 +163,5 @@ const State = enum {
     start,
     invalid,
     identifier,
+    newline,
 };
