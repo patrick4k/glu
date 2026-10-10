@@ -15,6 +15,7 @@ pub fn main() !void {
         \\
         \\
         \\{( foobar;:?, )}
+        \\ "bar\"baz"
         \\
     ;
     var tok = glu.tokenizer.Tokenizer.init(input);
@@ -23,7 +24,7 @@ pub fn main() !void {
     while (true) {
         const token = tok.next();
         const str = tok.stringify(token);
-        std.debug.print("{s} = {}\n", .{ str, token });
+        std.debug.print("'{s}' = {}\n\n", .{ str, token });
         switch (token.type) {
             .eof => break,
             else => {},

@@ -1,10 +1,13 @@
 const std = @import("std");
+const debug = std.debug.print;
 
 pub const TokenType = enum {
     invalid,
 
     identifier,
     string_literal,
+    int_literal,
+    float_literal,
 
     // symbols
     semicolon,
@@ -52,6 +55,10 @@ pub const Tokenizer = struct {
         return self.buffer[self.index];
     }
 
+    fn prev_char(self: *Self) u8 {
+        return self.buffer[self.index - 1];
+    }
+
     pub fn stringify(self: *Self, tok: Token) []const u8 {
         return self.buffer[tok.start..tok.end];
     }
@@ -86,6 +93,10 @@ pub const Tokenizer = struct {
                 'a'...'z', 'A'...'Z', '_' => {
                     token.type = .identifier;
                     continue :next .identifier;
+                },
+                '"' => {
+                    token.type = .string_literal;
+                    continue :next .string_literal;
                 },
                 '(' => {
                     token.type = .l_paren;
@@ -152,6 +163,18 @@ pub const Tokenizer = struct {
                 '\n', '\r' => continue :next .newline,
                 else => {},
             },
+            .string_literal => switch (self.next_char()) {
+                '"' => {
+                    if (self.prev_char() == '\\') {
+                        continue :next .string_literal;
+                    }
+                    self.index += 1;
+                },
+                else => continue :next .string_literal,
+            },
+            .number_literal => switch (self.next_char()) {
+                else => continue :next .invalid,
+            },
         }
 
         token.end = self.index;
@@ -164,4 +187,6 @@ const State = enum {
     invalid,
     identifier,
     newline,
+    string_literal,
+    number_literal,
 };
