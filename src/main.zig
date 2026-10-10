@@ -10,10 +10,17 @@ pub fn main() !void {
     try expect(ztok.next().tag == .keyword_comptime);
     std.debug.print("{}\n", .{ztok});
 
-    const input = "(12.3)";
+    const input = " \n\t foobar \n\t   foobar2";
     var tok = glu.tokenizer.Tokenizer.init(input);
     std.debug.print("{}\n", .{tok});
 
-    const token = tok.next();
-    std.debug.print("{}\n", .{token});
+    while (true) {
+        const token = tok.next();
+        const str = tok.stringify(token);
+        std.debug.print("{s} = {}\n", .{ str, token });
+        switch (token.type) {
+            .eof => break,
+            else => {},
+        }
+    }
 }
