@@ -94,6 +94,10 @@ pub const Tokenizer = struct {
                     token.type = .identifier;
                     continue :next .identifier;
                 },
+                '0'...'9' => {
+                    token.type = .int_literal;
+                    continue :next .int_literal;
+                },
                 '"' => {
                     token.type = .string_literal;
                     continue :next .string_literal;
@@ -172,8 +176,17 @@ pub const Tokenizer = struct {
                 },
                 else => continue :next .string_literal,
             },
-            .number_literal => switch (self.next_char()) {
-                else => continue :next .invalid,
+            .int_literal => switch (self.next_char()) {
+                '0'...'9' => continue :next .int_literal,
+                '.' => {
+                    token.type = .float_literal;
+                    continue :next .float_literal;
+                },
+                else => {},
+            },
+            .float_literal => switch (self.next_char()) {
+                '0'...'9' => continue :next .float_literal,
+                else => {},
             },
         }
 
@@ -188,5 +201,6 @@ const State = enum {
     identifier,
     newline,
     string_literal,
-    number_literal,
+    int_literal,
+    float_literal,
 };

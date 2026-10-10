@@ -16,6 +16,8 @@ pub fn main() !void {
         \\
         \\{( foobar;:?, )}
         \\ "bar\"baz"
+        \\ 1234
+        \\ 10.23
         \\
     ;
     var tok = glu.tokenizer.Tokenizer.init(input);
