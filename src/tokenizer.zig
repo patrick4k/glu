@@ -67,16 +67,16 @@ pub const Tokenizer = struct {
         };
     }
 
-    fn next_char(self: *Self) u8 {
+    fn nextChar(self: *Self) u8 {
         self.index += 1;
-        return self.curr_char();
+        return self.currChar();
     }
 
-    fn curr_char(self: *Self) u8 {
+    fn currChar(self: *Self) u8 {
         return self.buffer[self.index];
     }
 
-    fn prev_char(self: *Self) u8 {
+    fn prevChar(self: *Self) u8 {
         return self.buffer[self.index - 1];
     }
 
@@ -88,7 +88,7 @@ pub const Tokenizer = struct {
         var token = Token{ .type = undefined, .start = self.index, .end = undefined };
 
         next: switch (State.start) {
-            .start => switch (self.curr_char()) {
+            .start => switch (self.currChar()) {
                 0 => {
                     if (self.index == self.buffer.len) {
                         token = .{
@@ -103,7 +103,7 @@ pub const Tokenizer = struct {
 
                 // ignore
                 ' ', '\t' => {
-                    _ = self.next_char();
+                    _ = self.nextChar();
                     return self.next();
                 },
                 '\n', '\r' => {
@@ -166,7 +166,7 @@ pub const Tokenizer = struct {
                 else => continue :next .invalid,
             },
             .invalid => {
-                switch (self.next_char()) {
+                switch (self.nextChar()) {
                     0 => if (self.index == self.buffer.len) {
                         token.type = .invalid;
                     } else {
@@ -176,7 +176,7 @@ pub const Tokenizer = struct {
                     else => continue :next .invalid,
                 }
             },
-            .identifier => switch (self.next_char()) {
+            .identifier => switch (self.nextChar()) {
                 'a'...'z', 'A'...'Z', '_', '0'...'9' => continue :next .identifier,
                 else => {
                     const ident = self.buffer[token.start..self.index];
@@ -187,20 +187,20 @@ pub const Tokenizer = struct {
                     token.type = tokty;
                 },
             },
-            .newline => switch (self.next_char()) {
+            .newline => switch (self.nextChar()) {
                 '\n', '\r' => continue :next .newline,
                 else => {},
             },
-            .string_literal => switch (self.next_char()) {
+            .string_literal => switch (self.nextChar()) {
                 '"' => {
-                    if (self.prev_char() == '\\') {
+                    if (self.prevChar() == '\\') {
                         continue :next .string_literal;
                     }
                     self.index += 1;
                 },
                 else => continue :next .string_literal,
             },
-            .int_literal => switch (self.next_char()) {
+            .int_literal => switch (self.nextChar()) {
                 '0'...'9' => continue :next .int_literal,
                 '.' => {
                     token.type = .float_literal;
@@ -208,7 +208,7 @@ pub const Tokenizer = struct {
                 },
                 else => {},
             },
-            .float_literal => switch (self.next_char()) {
+            .float_literal => switch (self.nextChar()) {
                 '0'...'9' => continue :next .float_literal,
                 else => {},
             },
