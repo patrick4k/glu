@@ -11,17 +11,21 @@ pub fn main() !void {
     try expect(ztok.next().tag == .keyword_comptime);
     std.debug.print("{}\n", .{ztok});
 
+    // const input =
+    //     \\
+    //     \\ ("fooo baaar")
+    //     \\ "fooo baaar"
+    //     \\{( foobar;:?, )}
+    //     \\ "bar\"baz"
+    //     \\ // this is a comment
+    //     \\ 1234 + ** -= // this is also a comment
+    //     \\ 10.23
+    //     \\ let fn for while if unless until else
+    //     \\
+    // ;
     const input =
-        \\
-        \\ ("fooo baaar")
-        \\ "fooo baaar"
-        \\{( foobar;:?, )}
-        \\ "bar\"baz"
-        \\ // this is a comment
-        \\ 1234 + ** -= // this is also a comment
-        \\ 10.23
-        \\ let fn for while if unless until else
-        \\
+        \\ (12)
+        \\ "hello world"
     ;
     var tok = glu.tokenizer.Tokenizer.init(input);
     debug("{}\n", .{tok});

@@ -8,7 +8,10 @@ index: usize = 0,
 exprs: std.ArrayList(ast.Expr) = .empty,
 errors: std.ArrayList(ErrorData) = .empty,
 
-pub const ErrorData = union(enum) { unexpected_token: *const Token };
+pub const ErrorData = union(enum) { unexpected_token: *const Token, expected_closing: struct {
+    *const Token,
+    TokenType,
+} };
 
 pub const Error = error{
     UnexpectedToken,
@@ -36,6 +39,9 @@ pub fn logErrors(self: *Self) void {
         switch (err) {
             .unexpected_token => |tok| {
                 std.log.err("Unexpected token: {}", .{tok});
+            },
+            .expected_closing => |tok_ty| {
+                std.log.err("Expected closing '{}'", .{tok_ty});
             },
         }
     }
@@ -90,6 +96,7 @@ fn parseExpression(self: *Self) Error!ast.Expr {
             self.step();
             const expr = try self.parseExpression();
             if (self.currToken().type != TokenType.r_paren) {
+                try self.pushError(.{ .expected_closing = .{ self.currToken(), TokenType.r_paren } });
                 return Error.ExpectedClosing;
             }
             self.step();
