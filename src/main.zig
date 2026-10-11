@@ -14,7 +14,7 @@ pub fn main() !void {
     const input =
         \\
         \\ ("fooo baaar")
-        \\
+        \\ "fooo baaar"
         \\{( foobar;:?, )}
         \\ "bar\"baz"
         \\ // this is a comment
@@ -49,5 +49,10 @@ pub fn main() !void {
     var parser = glu.Parser.init(gpa.allocator(), input, tokens.items);
     defer parser.deinit();
 
-    try parser.parse();
+    parser.parse() catch |e| {
+        std.log.err("Failed to parse sample: {}", .{e});
+        parser.logErrors();
+        return;
+    };
+    std.log.info("Successfully parsed sample", .{});
 }

@@ -4,9 +4,11 @@ const Self = Parser;
 gpa: std.mem.Allocator,
 source: []const u8,
 tokens: []const Token,
-index: usize,
+index: usize = 0,
+exprs: std.ArrayList(ast.Expr) = .empty,
+errors: std.ArrayList(ErrorData) = .empty,
 
-exprs: std.ArrayList(ast.Expr),
+pub const ErrorData = union(enum) { unexpected_token: *const Token };
 
 pub const Error = error{
     UnexpectedToken,
@@ -14,11 +16,29 @@ pub const Error = error{
 } || std.mem.Allocator.Error;
 
 pub fn init(gpa: std.mem.Allocator, source: []const u8, tokens: []const Token) Self {
-    return .{ .gpa = gpa, .source = source, .tokens = tokens, .index = 0, .exprs = .empty };
+    return .{
+        .gpa = gpa,
+        .source = source,
+        .tokens = tokens,
+    };
 }
 
 pub fn deinit(self: *Self) void {
     self.exprs.deinit(self.gpa);
+    self.errors.deinit(self.gpa);
+}
+
+fn pushError(self: *Self, e: ErrorData) !void {
+    return self.errors.append(self.gpa, e);
+}
+pub fn logErrors(self: *Self) void {
+    for (self.errors.items) |err| {
+        switch (err) {
+            .unexpected_token => |tok| {
+                std.log.err("Unexpected token: {}", .{tok});
+            },
+        }
+    }
 }
 
 pub fn currToken(self: *const Self) *const Token {
@@ -38,6 +58,8 @@ pub fn parse(self: *Self) !void {
     self.eatNewline();
     const expr = try self.parseExpression();
     debug("expr: {}\n", .{expr});
+    const expr2 = try self.parseExpression();
+    debug("expr2: {}\n", .{expr2});
 }
 
 fn eatNewline(self: *Self) void {
@@ -51,27 +73,36 @@ fn eatNewline(self: *Self) void {
     }
 }
 
+fn pushExpr(self: *Self, expr: ast.Expr) !*const ast.Expr {
+    try self.exprs.append(self.gpa, expr);
+    return &self.exprs.items[self.exprs.items.len - 1];
+}
+
 fn parseExpression(self: *Self) Error!ast.Expr {
+    self.eatNewline();
     const tok = self.currToken();
-    switch (tok.type) {
-        .identifier => return ast.Expr{ .identifier = tok.* },
-        .string_literal => return ast.Expr{ .string_lit = tok.* },
-        .int_literal => return ast.Expr{ .int_lit = tok.* },
-        .float_literal => return ast.Expr{ .float_lit = tok.* },
+    const expr = switch (tok.type) {
+        .identifier => ast.Expr{ .identifier = tok.* },
+        .string_literal => ast.Expr{ .string_lit = tok.* },
+        .int_literal => ast.Expr{ .int_lit = tok.* },
+        .float_literal => ast.Expr{ .float_lit = tok.* },
         .l_paren => {
             self.step();
             const expr = try self.parseExpression();
-            if (self.nextToken().type != TokenType.r_paren) {
+            if (self.currToken().type != TokenType.r_paren) {
                 return Error.ExpectedClosing;
             }
-            try self.exprs.append(self.gpa, expr);
-            const expr_ptr = &self.exprs.items[self.exprs.items.len - 1];
-            return .{ .paren = expr_ptr };
+            self.step();
+            return .{ .paren = try self.pushExpr(expr) };
         },
-        else => return Error.UnexpectedToken,
-    }
+        else => {
+            try self.pushError(.{ .unexpected_token = tok });
+            return Error.UnexpectedToken;
+        },
+    };
+    self.step();
 
-    return .{};
+    return expr;
 }
 
 const std = @import("std");
