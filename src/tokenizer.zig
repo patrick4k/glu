@@ -3,6 +3,7 @@ const debug = std.debug.print;
 
 pub const TokenType = enum {
     invalid,
+    comment,
 
     identifier,
     string_literal,
@@ -15,6 +16,50 @@ pub const TokenType = enum {
     question_mark,
     colon,
     newline,
+
+    // ops
+    plus, // +
+    plus_eq, // +=
+    plus_plus, // ++
+    minus, // -
+    minus_eq, // -=
+    minus_minus, // --
+    star, // *
+    star_eq, // *=
+    star_star, // **
+    slash, // /
+    slash_eq, // /=
+    slash_slash, // //
+    pipe, // |
+    pipe_eq, // |=
+    pipe_pipe, // ||
+    ampersand, // &
+    ampersand_eq, // &=
+    ampersand_ampersand, // &&
+    mod, // %
+    mod_eq, // %=
+    mod_mod, // %%
+    caret, // ^
+    caret_eq, // ^=
+    caret_caret, // ^^
+    eq, // =
+    eq_eq, // ==
+    bang_eq, // !=
+    bang, // !
+    dot, // .
+    dot_eq, // .=
+    dot_dot, // ..
+    question, // ?
+    question_question, // ??
+    at, // @
+    dollar, // $
+
+    lt, // <
+    lt_eq, // <=
+    lt_lt, // <<
+    gt, // >
+    gt_eq, // >=
+    gt_gt, // >>
 
     // ([{}])
     l_paren,
@@ -163,6 +208,38 @@ pub const Tokenizer = struct {
                     token.type = .colon;
                     self.index += 1;
                 },
+                '+' => {
+                    token.type = switch (self.nextChar()) {
+                        '=' => .plus_eq,
+                        '+' => .plus_plus,
+                        else => .plus,
+                    };
+                    self.index += 1;
+                },
+                '-' => {
+                    token.type = switch (self.nextChar()) {
+                        '=' => .minus_eq,
+                        '-' => .minus_minus,
+                        else => .minus,
+                    };
+                    self.index += 1;
+                },
+                '*' => {
+                    token.type = switch (self.nextChar()) {
+                        '=' => .star_eq,
+                        '*' => .star_star,
+                        else => .star,
+                    };
+                    self.index += 1;
+                },
+                '/' => {
+                    token.type = switch (self.nextChar()) {
+                        '=' => .slash_eq,
+                        '/' => continue :next .comment,
+                        else => .slash,
+                    };
+                    self.index += 1;
+                },
                 else => continue :next .invalid,
             },
             .invalid => {
@@ -212,6 +289,12 @@ pub const Tokenizer = struct {
                 '0'...'9' => continue :next .float_literal,
                 else => {},
             },
+            .comment => {
+                switch (self.nextChar()) {
+                    '\n', '\r' => token.type = .comment,
+                    else => continue :next .comment,
+                }
+            },
         }
 
         token.end = self.index;
@@ -227,4 +310,5 @@ const State = enum {
     string_literal,
     int_literal,
     float_literal,
+    comment,
 };

@@ -4,6 +4,7 @@ const Io = std.Io;
 
 pub const tokenizer = @import("tokenizer.zig");
 pub const Parser = @import("parser.zig");
+pub const ast = @import("ast.zig");
 
 /// This is a documentation comment to explain the `printAnotherMessage` function below.
 ///

@@ -13,11 +13,12 @@ pub fn main() !void {
 
     const input =
         \\
-        \\
+        \\ ("fooo baaar")
         \\
         \\{( foobar;:?, )}
         \\ "bar\"baz"
-        \\ 1234
+        \\ // this is a comment
+        \\ 1234 + ** -= // this is also a comment
         \\ 10.23
         \\ let fn for while if unless until else
         \\
@@ -45,6 +46,8 @@ pub fn main() !void {
     }
     debug("found {} tokens!\n", .{tokens.items.len});
 
-    var parser = glu.Parser.init(input, tokens.items);
+    var parser = glu.Parser.init(gpa.allocator(), input, tokens.items);
+    defer parser.deinit();
+
     try parser.parse();
 }
