@@ -27,8 +27,11 @@ pub fn main() !void {
 
     const DebugAlloc = std.heap.DebugAllocator(.{});
     var gpa = DebugAlloc.init;
+    defer _ = gpa.deinit();
+
     const Tokens = std.ArrayList(glu.tokenizer.Token);
     var tokens = Tokens.empty;
+    defer tokens.deinit(gpa.allocator());
 
     while (true) {
         const token = tok.next();
