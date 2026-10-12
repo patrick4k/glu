@@ -210,35 +210,55 @@ pub const Tokenizer = struct {
                 },
                 '+' => {
                     token.type = switch (self.nextChar()) {
-                        '=' => .plus_eq,
-                        '+' => .plus_plus,
+                        '=' => brk: {
+                            self.index += 1;
+                            break :brk .plus_eq;
+                        },
+                        '+' => brk: {
+                            self.index += 1;
+                            break :brk .plus_plus;
+                        },
                         else => .plus,
                     };
-                    self.index += 1;
                 },
                 '-' => {
                     token.type = switch (self.nextChar()) {
-                        '=' => .minus_eq,
-                        '-' => .minus_minus,
+                        '=' => brk: {
+                            self.index += 1;
+                            break :brk .minus_eq;
+                        },
+                        '-' => brk: {
+                            self.index += 1;
+                            break :brk .minus_minus;
+                        },
                         else => .minus,
                     };
-                    self.index += 1;
                 },
                 '*' => {
                     token.type = switch (self.nextChar()) {
-                        '=' => .star_eq,
-                        '*' => .star_star,
+                        '=' => brk: {
+                            self.index += 1;
+                            break :brk .star_eq;
+                        },
+                        '*' => brk: {
+                            self.index += 1;
+                            break :brk .star_star;
+                        },
                         else => .star,
                     };
-                    self.index += 1;
                 },
                 '/' => {
                     token.type = switch (self.nextChar()) {
-                        '=' => .slash_eq,
-                        '/' => continue :next .comment,
+                        '=' => brk: {
+                            self.index += 1;
+                            break :brk .slash_eq;
+                        },
+                        '/' => {
+                            self.index += 1;
+                            continue :next .comment;
+                        },
                         else => .slash,
                     };
-                    self.index += 1;
                 },
                 else => continue :next .invalid,
             },
