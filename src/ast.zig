@@ -3,7 +3,7 @@ const Token = @import("tokenizer.zig").Token;
 
 pub const NodeGraph = struct {
     const Self = @This();
-    const ExprIdx = usize;
+    const ExprIdx = struct { idx: usize };
 
     gpa: std.mem.Allocator,
     exprs: std.ArrayList(Expr) = .empty,
@@ -20,14 +20,18 @@ pub const NodeGraph = struct {
 
     pub fn insertExpr(self: *Self, expr: Expr) !ExprIdx {
         try self.exprs.append(self.gpa, expr);
-        return self.exprs.items.len - 1;
+        return .{ .idx = self.exprs.items.len - 1 };
+    }
+
+    pub fn getExprUnchecked(self: *const Self, idx: ExprIdx) *const Expr {
+        return &self.exprs.items[idx.idx];
     }
 
     pub fn getExpr(self: *const Self, idx: ExprIdx) ?*const Expr {
-        if (self.exprs.items.len - 1 < idx) {
+        if (self.exprs.items.len - 1 < idx.idx) {
             return null;
         }
-        return &self.exprs.items[idx];
+        return self.getExprUnchecked(idx);
     }
 };
 
