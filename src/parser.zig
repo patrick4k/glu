@@ -4,8 +4,8 @@ const Self = Parser;
 gpa: std.mem.Allocator,
 source: []const u8,
 tokens: []const Token,
+nodes: ast.NodeGraph,
 index: usize = 0,
-exprs: std.ArrayList(ast.Expr) = .empty,
 errors: std.ArrayList(ErrorData) = .empty,
 
 pub const ErrorData = union(enum) { unexpected_token: *const Token, expected_closing: struct {
@@ -23,11 +23,12 @@ pub fn init(gpa: std.mem.Allocator, source: []const u8, tokens: []const Token) S
         .gpa = gpa,
         .source = source,
         .tokens = tokens,
+        .nodes = .init(gpa),
     };
 }
 
 pub fn deinit(self: *Self) void {
-    self.exprs.deinit(self.gpa);
+    self.nodes.deinit();
     self.errors.deinit(self.gpa);
 }
 
@@ -60,12 +61,22 @@ pub fn nextToken(self: *Self) *const Token {
     return self.currToken();
 }
 
+pub fn nextTokenNoStep(self: *Self) *const Token {
+    return &self.tokens[self.index + 1];
+}
+
+pub fn isEnd(self: *Self) bool {
+    return self.index >= self.tokens.len;
+}
+
 pub fn parse(self: *Self) !void {
     self.eatNewline();
-    const expr = try self.parseExpression();
-    debug("expr: {}\n", .{expr});
-    const expr2 = try self.parseExpression();
-    debug("expr2: {}\n", .{expr2});
+    const expr = try self.parseExpression(true);
+    std.log.debug("\n\nexpr\n", .{});
+    expr.dump(&self.nodes);
+    const expr2 = try self.parseExpression(true);
+    std.log.debug("\n\nexpr2\n", .{}); // WHY THE FUCK IS THE SEG FAULTING
+    expr2.dump(&self.nodes);
 }
 
 fn eatNewline(self: *Self) void {
@@ -84,23 +95,30 @@ fn pushExpr(self: *Self, expr: ast.Expr) !*const ast.Expr {
     return &self.exprs.items[self.exprs.items.len - 1];
 }
 
-fn parseExpression(self: *Self) Error!ast.Expr {
+fn parseExpression(self: *Self, check_binary_op: bool) Error!ast.Expr {
     self.eatNewline();
-    const tok = self.currToken();
-    const expr = switch (tok.type) {
+    var tok = self.currToken();
+
+    var prefix_op: ?*const Token = null;
+    if (tok.type.isPrefixOp()) {
+        prefix_op = tok;
+        tok = self.nextToken();
+    }
+
+    var expr: ast.Expr = undefined;
+    expr = switch (tok.type) {
         .identifier => ast.Expr{ .identifier = tok.* },
         .string_literal => ast.Expr{ .string_lit = tok.* },
         .int_literal => ast.Expr{ .int_lit = tok.* },
         .float_literal => ast.Expr{ .float_lit = tok.* },
-        .l_paren => {
+        .l_paren => brk: {
             self.step();
-            const expr = try self.parseExpression();
+            const enclosed_expr = try self.parseExpression(true);
             if (self.currToken().type != TokenType.r_paren) {
                 try self.pushError(.{ .expected_closing = .{ self.currToken(), TokenType.r_paren } });
                 return Error.ExpectedClosing;
             }
-            self.step();
-            return .{ .paren = try self.pushExpr(expr) };
+            break :brk ast.Expr{ .paren = try self.nodes.insertExpr(enclosed_expr) };
         },
         else => {
             try self.pushError(.{ .unexpected_token = tok });
@@ -108,6 +126,19 @@ fn parseExpression(self: *Self) Error!ast.Expr {
         },
     };
     self.step();
+
+    if (prefix_op) |op| {
+        const rhs = try self.nodes.insertExpr(expr);
+        expr = .{ .prefix_op = .{ .op = op, .rhs = rhs } };
+    }
+
+    if (check_binary_op and !self.isEnd() and self.currToken().type.isBinaryOp()) {
+        const lhs = try self.nodes.insertExpr(expr);
+        const op = self.currToken();
+        self.step();
+        const rhs = try self.nodes.insertExpr(try self.parseExpression(false));
+        expr = .{ .binary_op = .{ .lhs = lhs, .op = op, .rhs = rhs } };
+    }
 
     return expr;
 }

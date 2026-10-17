@@ -24,8 +24,8 @@ pub fn main() !void {
     //     \\
     // ;
     const input =
-        \\ (12)
-        \\ "hello world"
+        \\ ((1.0 + 2.0))
+        \\ 12 + foobar
     ;
     var tok = glu.tokenizer.Tokenizer.init(input);
     debug("{}\n", .{tok});

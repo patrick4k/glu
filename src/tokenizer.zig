@@ -33,6 +33,12 @@ pub const TokenType = enum {
     pipe, // |
     pipe_eq, // |=
     pipe_pipe, // ||
+    lt, // <
+    lt_eq, // <=
+    lt_lt, // <<
+    gt, // >
+    gt_eq, // >=
+    gt_gt, // >>
     ampersand, // &
     ampersand_eq, // &=
     ampersand_ampersand, // &&
@@ -54,13 +60,6 @@ pub const TokenType = enum {
     at, // @
     dollar, // $
 
-    lt, // <
-    lt_eq, // <=
-    lt_lt, // <<
-    gt, // >
-    gt_eq, // >=
-    gt_gt, // >>
-
     // ([{}])
     l_paren,
     r_paren,
@@ -80,6 +79,40 @@ pub const TokenType = enum {
     kw_until,
 
     eof,
+
+    pub fn isPrefixOp(self: *const TokenType) bool {
+        return switch (self.*) {
+            .plus,
+            .minus,
+            => true,
+            else => false,
+        };
+    }
+
+    pub fn isBinaryOp(self: *const TokenType) bool {
+        return switch (self.*) {
+            .plus,
+            .minus,
+            .star,
+            .slash,
+            .pipe,
+            .pipe_pipe,
+            .lt,
+            .lt_eq,
+            .lt_lt,
+            .gt,
+            .gt_eq,
+            .gt_gt,
+            .ampersand,
+            .ampersand_ampersand,
+            .mod,
+            .mod_mod,
+            .caret,
+            .caret_caret,
+            => true,
+            else => false,
+        };
+    }
 };
 
 const keywords = std.StaticStringMap(TokenType).initComptime(.{
